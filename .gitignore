@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 .idea/*
 .env
+/utils/db_api/brands.json
