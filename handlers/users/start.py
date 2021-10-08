@@ -50,7 +50,7 @@ async def answer(call: types.CallbackQuery, callback_data: dict):
     text_message = 'Error'
     reply_markup = None
     if action == 'DELL':
-        text_message = f'Из кантроля удален бренд {name}'
+        text_message = f'Из контроля удален бренд {name}'
         delete_brand_in_bd(name)
         reply_markup = select_reply_markup_brands()
         # Удаление из базы отслеживаемого бренда
