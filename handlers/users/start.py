@@ -1,11 +1,13 @@
 from aiogram import types
+from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.builtin import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 
 from data.config import ADMINS
 from loader import dp
-from utils.db_api.ftp_connect import return_brands_ftp
+from states.state import StateBrands
+from utils.db_api.ftp_connect import return_brands_ftp, add_brand_name_in_bd, delete_brand_in_bd
 
 callback_brands = CallbackData('brands', 'action', 'name')
 
@@ -37,3 +39,34 @@ def select_reply_markup_brands():
                                            action='ADD', name='NEW'
                                        )))
     return button
+
+
+@dp.callback_query_handler(callback_brands.filter(), state=None)
+async def answer(call: types.CallbackQuery, callback_data: dict):
+    await call.answer(cache_time=15)
+
+    action = callback_data['action']
+    name = callback_data['name']
+    text_message = 'Error'
+    reply_markup = None
+    if action == 'DELL':
+        text_message = f'Из кантроля удален бренд {name}'
+        delete_brand_in_bd(name)
+        reply_markup = select_reply_markup_brands()
+        # Удаление из базы отслеживаемого бренда
+    elif action == 'ADD':
+        text_message = 'Напишите наименование бренда,\n как он указан на сайте'
+        await StateBrands.next()
+    await call.message.edit_text(text=text_message,
+                                 reply_markup=reply_markup
+                                 )
+
+
+@dp.message_handler(state=StateBrands.name)
+async def answer(message: types.Message, state: FSMContext):
+    name = message.text
+    # await state.update_data(name=name)
+    await state.finish()
+    add_brand_name_in_bd(name)
+    await message.answer(f"Бренд {name} добавлен", reply_markup=select_reply_markup_brands())
+
